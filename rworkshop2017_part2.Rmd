@@ -1,0 +1,221 @@
+---
+title: 'R Workshop, Part 2: Analyzing a Dataset'
+author: "Natalia Vélez, Yuan Chang Leong"
+date: "6/25/2017"
+output: html_document
+---
+
+This part of the workshop is intended to give you a more realistic experience of analyzing a new dataset. You'll do all of the steps we covered in part 1---load and checking datasets, creating summaries, plotting data, and running statistics---mostly on your own. Of course, you are welcome to ask for help whenever you get stuck!
+
+## Your dataset
+
+To begin, we'll load in a simple data file and store it as a [dataframe](http://www.r-tutor.com/r-introduction/data-frame) named `df_survey`. This data file is called `fieldsimul1.csv`. Likely voters (*n* = 240) were surveyed about their age, optimism, and a host of other factors. More specifically, these are all of the variables you'll encounter in this data frame:
+
+* age: Age of voters surveyed (20-75 years)
+* agecat: Age of voters surveyed, binned into groups of 20 years
+* party: Political party of voters (1=Democrat, 2=Republican, 3=Other)
+* prop54: Whether voters reported if they would vote for Prop 54 (Racial Privacy Initiative)
+* optmism: Level of optimism (0-11)
+* recall: Do you think the governor should be recalled? (1=yes, 2=no, 3=unsure)
+* recallq: Do you think the governor should be recalled? (1=yes, 0=unsure, -1=no)
+
+(Note: When you write R Markdown files to analyze your own datasets, it's good practice to describe what information your variables contain, and to start off the file by loading your data and libraries.)
+
+```{r load df_survey}
+# Load libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+library(RColorBrewer)
+library(lme4)
+
+df_survey = read.csv('http://stanford.edu/class/psych252/data/fieldsimul1.csv')
+```
+
+Let's explore this data a bit to see what we'll be working with:
+
+```{r explore_df_survey}
+str(df_survey)
+head(df_survey)
+summary(df_survey)
+```
+
+Here we can see that this **dataframe** is composed of 7 **variables** that each has 200 observations. In this case, each observation represents a different participant, and the 7 variables tell us information about that participant. 
+
+**Exercise:** As an example, let's look at all the information for participant 5 by looking at the 5th row of df_survey:
+
+```{r observeRow_df_survey}
+# FILL IN CODE HERE
+```
+
+This shows us that participant 5 is 25 years old, and has an optimism score of 6.
+
+## If you learn nothing else today, learn this: Search!
+
+We'll keep reminding you of this throughout today's workshop: search quickly, search often, and search in plain English (or your preferred non-computer language)! 
+
+### Use the internet!
+
+Don't know what function you should use to do a t-test? Google "t test R", or "how do I do a t-test in R?". Don't remember how to use the chisq.test() function? Google "chisq.test() R". Don't remember what a chi-squared test is? Google it, and read the Wikipedia page, and the Stackexchange discussion, and whatever weird PDFs you find online. Still getting an error message when you try to run the code? Google that error message, in quotes.
+
+Every person using R, and every person doing statistics, has a million questions as they are doing it - novices and experts alike. Luckily for all of us, many of our fellow R and stats learners post their questions online, and other lovely people attempt to answer them publicly! We read somewhere that a prominent distinction between an experienced programmer and a novice is the longer latency for the novice to look up the help for something confusing (but the direction of causality is not clear!).
+
+### Use R!
+Another wonderful thing about working in R is that there's actually a lot of help built right into R, and RStudio makes it very easy to see. Almost all R functions (more later on what those are) have help files built in that will provide you with useful information about what those functions do and how to use them. You find this by typing '?function', where I am using "function" as a stand-in for the name you actually want to know about (e.g., '?chisq.test' or '?t.test'). It's important to read these files closely the first time you encounter a function, but it's also (possibly more) important to refer to them **frequently**. If you have a sense for what you want to do, but don't know or can't remember the exact function that will do it, you can use two question marks to search through the help files for a term (e.g. '??regression').
+
+### Debugging practice
+
+Here are several chunks of code that are broken. Fix them! What tools are available to help you use to do this? We've included a note under each chunk about what we were **trying** to do :).
+
+Note: you need to uncomment (remove the #) the commented lines, otherwise they won't run.
+
+**Exercise 1:** Get the last element of x
+```{r}
+x = 25:90
+#x[90,]
+```
+
+**Exercise 2:** Create a scatter plot of responses to the recall question by age
+```{r}
+#ggplot(data=df_survey, aesthetic(x = age, y = recallq)) +
+#  geom_point()
+```
+
+**Exercise 3:** Here's a more general problem you will run into, simply, how to do something you've never done before! Search google and figure out how to plot a **polynomial** regression line (e.g. y = x^2) onto this ggplot code:
+
+```{r}
+ggplot(data = df_survey, aes(x = age, y = optmism, color = factor(party))) +
+  geom_point()
+```
+
+## Data wrangling
+
+As in part 1, we'll use `dplyr` to clean up our data. In part 1, you learned about the functions `mutate`, `group_by` and `summarise`; in this part, you'll learn about a few other useful things that dplyr can do.
+
+First, let's use `mutate` again. If we look at a summary of our dataset, you'll see that every single variable is coded as an integer:
+
+```{r Show dataset}
+str(df_survey)
+```
+
+**Exercise:** Change `agecat`, `party`, `prop54`, and `recall` into factors with informative labels. Check the description of the dataset above for more information. (Note that we'll be working with a new dataframe, `df_survey_tidy`, so that `df_survey` is not changed. That way, if you make a mistake, you can start from scratch!)
+
+```{r Cleaning exercise: mutate}
+df_survey_tidy = df_survey %>%
+  mutate(party = factor(party, levels = 1:3, labels = c('Democrat', 'Republican', 'Other')),
+         agecat = YOUR_CODE_HERE,
+         prop54 = YOUR_CODE_HERE,
+         recall = YOUR_CODE_HERE)
+
+str(df_survey_tidy)
+```
+
+Ah, much better. Now let's use the `rename` function to rename some of our variables. It's driving me crazy that one of the variables is misspelled!
+
+**Exercise:** Rename `optmism` to `optimism`. Check the documentation for rename (`?rename`) to figure out how to do this.
+
+```{r Cleaning exercise: rename}
+df_survey_tidy = df_survey_tidy %>%
+  rename(YOUR_CODE_HERE)
+
+head(df_survey_tidy)
+```
+
+Thanks for fixing that! Now, the variable has two variables that are largely redundant: let's use `select` to eliminate `recallq`. You can use select in two ways. First, you can specify which columns you want to *keep* by providing a list of columns. (Note: We won't be using the output of these next two steps later, so we'll store them as separate dataframes.)
+
+**Exercise**: Use `select` to keep `recall`, `prop54`, `party`, `age`, `optimism`, and `agecat`. Again, refer to the documentation for select.
+
+```{r Cleaning exercise: select}
+df_survey_select1 = df_survey_tidy %>%
+  select(YOUR_CODE_HERE)
+```
+
+Alternatively, you could use select to *deselect* columns. This is really similar to what you did above but, if you add a `-` to the list of variable names (`-c(...)`), dplyr instead keeps all of the variables *except* for the ones you've specified with `select`.
+
+**Exercise**: Use `select` to remove `recallq`.
+
+```{r Cleaning exercise: deselect}
+df_survey_select2 = df_survey_tidy %>%
+  select(YOUR_CODE_HERE)
+```
+
+## Analyze your dataset
+
+Congrats, you now have a tidy dataset! Now we can put our pollster hats on and answer a few questions about our dataset:
+
+### Question 1: How many voters voted in favor of proposition 54?
+
+**Exercise:** 
+
+* Use the `summary` function to find out how many voters voted for and against prop54.
+* Does the proportion of voters who supported prop54 differ from chance? (*Hint:* use a binomial test. Google it!)
+
+```{r Question 1}
+summary(YOUR_CODE_HERE)
+```
+
+### Question 2: What is the age distribution in our sample?
+
+Before that, let's gather some demographic information about our sample. What are the ages of the voters we surveyed?
+
+**Exercise:** Plot a histogram of age across your sample. Google how to plot a histogram with ggplot.
+
+```{r Question 2}
+ggplot(df_survey_tidy, aes(YOUR_CODE_HERE)) +
+  YOUR_CODE_HERE
+```
+
+### Question 3: Does optimism change with age?
+
+Now, we can start looking for relationships between our variables!
+
+**Exercise:** 
+
+* Draw a scatter plot of age (x-axis) vs. optimism (y-axis). Google how to draw a trendline with ggplot.
+* How would you test statistically whether there is a linear relationship between age and optimism?
+
+```{r Question 3}
+ggplot(df_survey_tidy, aes(YOUR_CODE_HERE)) +
+  YOUR_CODE_HERE
+```
+
+### Question 4: Does optimism vary by party?
+
+**Exercise:** First, we'll want to know the AVERAGE optimism rating for voters from each party. Use `group_by`, `summarise`, and `mean` to summarize `df_survey_tidy`. Next, we'll plot your summary as a bar plot. 
+
+```{r Question 4}
+optimism_summary = df_survey_tidy %>%
+  group_by(YOUR_CODE_HERE) %>%
+  summarise(YOUR_CODE_HERE)
+
+ggplot(optimism_summary, aes(YOUR_CODE_HERE)) + 
+  geom_bar(stat = 'identity')
+```
+
+*Challenge problems:*
+
+* Add error bars showing the standard error of the mean.
+* Change the `fill` aesthetic, so that each party has a different-colored bar
+* Change the bar fill colors manually to match the parties' real-world colors (e.g., red for Republicans)
+* How would you test statistically whether optimism varies by party?
+
+### Question 5: Does support for Prop 54 vary by party?
+
+**Exercise:**
+* Create a summary of `df_survey_tidy` that shows the number of voters who voted ('Yes', 'No', and 'Unsure') in each party.
+* Display the summary as a stacked bar plot.
+* How would you test statistically whether the proportion of voters who voted 'Yes', 'No', or 'Unsure' differs by party?
+
+```{r Question 5}
+prop54_summary = df_survey_tidy %>%
+  group_by(YOUR_CODE_HERE) %>%
+  summarise(n_voters = n())
+
+ggplot(prop54_summary, aes(x = YOUR_CODE_HERE, y = YOUR_CODE_HERE, fill = YOUR_CODE_HERE)) +
+  geom_bar(stat = 'identity')
+```
+
+Congratulations! You've tidied up a dataset and used a mix of plots and statistical tests to analyze it. These tasks---cleaning, summarizing, plotting, and analyzing data---are the basic toolkit of any researcher that uses R. You'll grow more confident and comfortable in using these tools with a lot of work, practice, and Googling.
+
+**CHALLENGE:** Can you think of any other questions you want to ask about this dataset? How would you answer them?

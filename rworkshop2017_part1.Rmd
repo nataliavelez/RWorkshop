@@ -1,0 +1,470 @@
+---
+title: "R Workshop, Part 1: R Basics"
+author: "Natalia Vélez, Yuan Chang Leong"
+date: "6/24/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The exercises in this workshop were made possible by all of the graduate students who helped develop R tutorials for Psych 252. Paul Thibodeau (2009), 252 TA's in 2010 and 2011, Mike Frank, Benoit Monin, and Ewart Thomas created the original tutorials. Michael Waskom and Steph Gagnon converted the tutorials to <a href="http://www.rstudio.com/ide/docs/r_markdown">R Markdown</a>. Dan Birman, Natalia Velez, Kara Weisman, Robert Hawkins, Andrew Lampinen, Joshua Morris, and Yochai Shavit updated the tutorials in 2015 and 2016.
+
+Introduction to the workshop
+-----------------------------
+
+The data analysis environment we'll be using for this workshop consists of R and RStudio. **R** is a programming language that is specifically designed for statistical computation. It is powerful, flexible, and widely used in the statistical community. The aspects that make R so powerful and flexible, however, contribute to a learning curve that is likely steeper than what you might find in "point-and-click" programs (like SPSS or Excel). Using **RStudio** (an "integrated development environment" specifically designed for R) makes things a little easier, but learning these new tools can still feel overwhelming at times. This workshop provides a general introduction to R for research.
+
+Some notes on R and RStudio
+---------------------------
+
+### Common questions: What am I doing? Why?
+
+Your basic goal when you're working with data in R is to write out a **script** that documents and executes every step of your interaction with your data, via lines of **code**. You can then run this code in the **console**, either bit by bit (starting from the top, and working your way down) or all at once. Your script will ultimately include every step of data processing and analysis:
+
+* __Formatting datasets__ (e.g., making new variables based on other variables in your dataset, isolating subsets of your dataset, comparing different datasets, ...)
+* __Summarising results__ (e.g., finding means, assessing variability and distributions, ...)
+* __Running statistical analyses__ (e.g., t-tests, chi-squared tests, regressions, ...)
+* __Making plots__ 
+
+Your script should also include some notes about what you're doing, for future reference. One of the best ways to do this is by creating an R Markdown document, like this one, where you can include both prose (like this current paragraph) and code (more on that later!). 
+
+This has so many advantages over other ways of analyzing data!
+
+* You have a record for yourself - forever! - for working on analyses over time (even as you continue to collect data), quickly analyzing similar new datasets, and reconstructing abandoned projects
+* You can automate as much of the data processing, analysis, plotting, and even reporting process as you want to, saving you from copying and pasting and making stupid mistakes 
+* You can easily give your script to other people as a guide for them to understand or help you with your analyses, build on your findings, reanalyze your data, attempt to replicate your studies, etc.
+
+And if you get really into it, you can use version control on your analysis code (e.g., using [github](https://github.com/)), make your own functions and packages tailored to your own projects and needs, make web apps for visualizing your data, and even write entire manuscripts in the R/RStudio environment. Learning R in the context of this tutorial can be a springboard for all of these skills and projects.
+
+### Common questions, continued: Okay but where am I? Where is my dataset?
+
+In RStudio, the default view shows you 4 windows:
+
+* By default, the upper left window in RStudio shows you tabs for all of the __R scripts__ (extension: .R) or __R Markdown files__ (extension: .rmd) that you currently have open. These are the places where you're storing your step-by-step guide for how to processes, analyze, plot, etc. your dataset. You can run lines of code from your script by highlighting them, and pressing COMMAND + ENTER on Mac, or CONTROL + ENTER on PC. If you're in an R Markdown document and want to run a whole chunk of code, you can press ALT + COMMAND + C on Mac, or ALT + CONTROL + C on PC.
+* The __console__ is (by default) in the lower left window of RStudio . This is where you can type in lines of code, run them, and see results printed out. It's like the screen of a calculator. When you run code from your script, it will show up here, along with its results and any warning or error messages.
+* In the upper right window of RStudio (by default), you can see your __environment__, which is where you'll see any datasets you've loaded as well as any other variables or objects you've created in the console. If you want to examine what these datasets (etc.) look like, you can click on them and they'll pop up in the upper left window! (You can also do this by using the `View()` function in the console.) This window also has a tab for viewing your __history__, i.e., all the commands you've run in the console, in order.
+* In the lower right window of RStudio (by default) are tabs for viewing your __files__ (showing you the same organization of files and folders that you'd see in Finder), your __plots__ that you create, any __packages__ you have loaded or want to load (more on this later), and the __help documentation__ for any functions you want to learn more about (more on this later, too!).
+
+(Note that you can change the layout of these windows if you want.)
+
+Getting down to business: Basic interaction with the R console
+--------------------------------------------------------------
+
+At its least useful, you can treat R like a calculator for basic computations. Just type some mathematical expression into the console, and the result will be displayed on the following line.
+
+```{r basic_calculator}
+1 + 2
+13 / 2
+2 ^ 6
+5 * (2 + 3)
+```
+
+### Variable Assignment
+
+Of course, R is a programming language, so it is much more powerful than a basic calculator. A major aspect of computing with R involves the assignment of values to variables.
+
+```{r variable_assignment_1}
+x = 4
+x <- 4
+```
+
+In both cases, `x` will represent `4` for all lines of code below these here, unless you reassign `x`.
+
+```{r variable_assignment_2}
+x
+x + 2
+x = 8
+x
+```
+
+It is important not to confuse variable assignment with a statement about equality. In your head, you should say *set x to 4* or *x gets 4*, but not *x is equal to 4*. Don't worry now about the subtle differences between the two assignment styles. Although using `=` is more consistent with the norm in other programming languages, some people prefer `<-` as it makes the action that is being performed more obvious. Whichever you choose, it's best to be consistent throughout your code.
+
+In case you're wondering, you test for equality with two equal signs (`==`), which does something completely different:
+
+```{r equality_tests}
+2 == 2
+2 == 3
+```
+
+It's fine to use variable names like `x` for simple math examples like the ones above. But, when writing code to perform analysis, you should be careful to use descriptive names. Code where things are named, `subject_id`, `condition`, and `rt` will be a bit more verbose than if you had used `x`, `y`, and `z`, but it will also make **much** more sense when you read it again 4 months later as you write up the paper.
+
+With that said, there are a few rules for variable names. You can use any alphanumeric character, although the first character must be a letter. You can't use spaces, because the computer doesn't know that you're trying to write a phrase and interprets that as two (or more) separate terms. When you want something like a phrase, the `_` and `.` characters can be employed (this can be a bit confusing as `.` is usually meaningful in programming languages, but not in R).
+
+Here's a simple example that novice coders often find confusing. Walk yourself through the code and make sure you understand what operations lead to the final return value:
+
+```{r assignment_example}
+a = 10
+b = 20
+a = b
+print(a)
+
+## Note that we can now use the variable in calculations (this will become more important later on) ##
+a+b
+b-a^2
+```
+
+
+Using functions
+---------------
+
+Check out the helpful [R cheatsheet](http://stanford.edu/class/psych252/cheatsheets/index.html#r-cheatsheet) on the class site to see a list of some commonly used functions!
+
+Another core concept involves using *functions* to perform more complex operations. Functions in R work like they do in mathematics: they specify a transformation from one or more inputs (called *arguments* or *parameters*) to one or more outputs (or *return values*). You *call* a function by writing its name followed by parentheses, with any arguments going inside the parentheses. We already saw one example of this with the `print()` function above. The `cat()` function is similar, but it converts its arguments into characters first (This is mostly useful when creating R output files, which we will not be doing much of in this course). There are also some basic mathematical functions built into R that operate on numbers:
+
+```{r math_functions}
+abs(-4)
+sqrt(64)
+log(1.75)
+```
+
+A frequently-used function is `c()`, which stands for *concatenate*. This takes a sequence of arguments and sticks them together into a *vector*, which we'll explain a little bit more about below. All you need to know now is that most of the built in functions for descriptive statistics (and there are many of these!) expect to receive a vector or something like it.
+
+```{r basic_vectors}
+a = c(1.5, 4, 3)
+a
+cat(a)#note that now the numbers appear as characters
+sum(a) # Sum
+mean(a) # Average
+sd(a) # Standard deviation
+```
+
+You can also *compose* functions, which allows for more expressive code:
+
+```{r composed_functions}
+a = c(-2, 4, 5.5)
+sum(a)
+sum(abs(a))
+```
+
+### Keyword Arguments
+
+Sometimes, functions have *keyword arguments*. When values are not passed for these arguments, they take a default value, which can be found when you look at the help for that function (`?func_name`). For example, most statistical functions in R have built-in missing-value handling. Because missing data is common with real-world data, there is a special object in R to stand for it called `NA`. Functions like `mean` have an optional argument `na.rm` which tells the function whether it should just ignore these values. It's `FALSE` by default, so a vector with missing values will have a mean of NA (to indicate that the normal mathematical procedure failed on these particular data):
+
+```{r na.rm_false}
+a = c(2, 6, NA, 8)
+mean(a)
+```
+
+However, you can handle the missing data by setting `na.rm` to `TRUE`, which omits any `NA` items from the calculation.
+
+```{r na.rm_true}
+mean(a, na.rm=TRUE)
+```
+
+You'll find abundant use of keyword arguments as we move onto functions encapsulating more complex statistical methods.
+
+Common Data Structures
+---------------------
+
+Although it's nice to be able to do basic arithmetic on numbers, for data analysis you're usually going to have a *dataset*. Fortunately, R has several higher-level data structures that can represent collections of data along with semantic information describing the elements of those data sets.
+
+### Vectors
+
+We've already seen one of the most basic data structures, which is called a *vector*. Vectors are an ordered group of elements with a single dimension. This is what you get by using the `c()` function:
+
+```{r c_vector}
+c(1, 2, 3, 4, 5, 6)
+```
+
+A shortcut to get an equivalent sequence uses the `:` operator:
+
+```{r seq_vector}
+1:6
+```
+
+You put vectors together to make a data frame:
+
+```{r adding_names}
+### An example of when it may be useful- number of food items on plate ###
+breakfast = c(1, 0, 2, 4, 2, 1, 1, 3, 0)
+names(breakfast) = c("elmo", "oscar", "big bird", "cookie monster", "bert", "ernie", "the count", "kermit", "grover")
+
+lunch = c(3, 4, 0, 6, 1, 1, 2, 1, 2)
+
+eating=cbind(breakfast, lunch) #vectors can be bunched together using the function cbind(). Note that the names we assigned to our original vector now represent each row. 
+
+eating
+```
+
+To pull specific elements out of a vector, you *index* (or *subscript*) by writing the name of the vector and then adding square brackets (`[ ]`)  with the position of the item you want (starting at 1). You can also use `:` to index multiple elements:
+
+```{r index_vector}
+v = 2:7
+v[3]
+v[3:6]
+v[c(2,4,6)]
+```
+
+If your vector has names associated with the values, you can index with those too:
+
+```{r name_index}
+### From our example ###
+breakfast["big bird"]
+eating["grover", 2] # we can index using the variable's column number (location)
+eating["cookie monster", "lunch"] #we can index using the variable's name
+```
+
+Indexing into a vector allows you not just to use the value in that position, but to change it too:
+
+```{r index_update}
+v[1:2] = c(4, 5)
+v
+v["buz"] = 6
+v
+
+### in our example- oscar actually had fruit for breakfast ###
+breakfast["oscar"]= 1
+breakfast #notice that the change did not automatically carry over to "eating" dataset
+
+## kermit had sandwich and an egg for lunch ##
+eating["kermit", "lunch"]= 2
+eating
+## ernie had the same breakfast as bert ##
+eating["ernie", "breakfast"] = eating["bert", "breakfast"]
+eating
+```
+
+An important fact about vectors is that all of the elements in the vector have to be the same datatype. For the most part, there are three datatypes you should care about:
+
+- logical (`TRUE`, `FALSE`)
+- numeric
+- character
+
+These are listed in increasing order of generality, since logical data can be considered numeric (with `FALSE == 0` and `TRUE == 1`) and numbers can be encoded as strings. When a vector is created with multiple datatypes, the most general one is chosen. Be aware that this can cause unexpected errors:
+
+```{r vector_dtypes}
+v = c(TRUE, 1, "1")
+v
+# v[3] + 2 #error!
+```
+
+There are some functions to convert vectors between types:
+
+```{r type_convert}
+v = c(1, 0, 1)
+as.logical(v)
+as.character(v)
+as.numeric(c("1", 2.5)) 
+```
+
+While we're talking about datatypes, we'll point out that the terms "character" and "string" are interchangeable (although the R functions use the former term), and you can use either `'` or `"` to create strings.
+
+One nice thing about vectors is that you can treat vectors as whole objects in mathematical expressions, and the expression will be applied to the entire vector (this is called "vectorized computation"). This results in code that is both easier to read and faster to execute than performing the operation on each element of the vector:
+
+```{r vectorized_math}
+v = c(4, -2.5, 6, -7.3)
+v * .5
+v ** 2
+abs(v)
+w = 1:4
+log(w)
+v + w
+```
+
+
+### DataFrames
+
+Possibly the most useful data structure, and the one you'll encounter most often when doing statistics with R, is the `data.frame`. Technically, a dataframe is a list of vectors, although you don't need to interact directly with lists to use them. You can make a dataframe with the eponymous function, `data.frame` which creates a two-dimensional object (like a matrix) with each component vector placed in the columns. In this sense, it's similar to a basic spreadsheet in Excel or SPSS, which you may have experience with.
+
+```{r dataframe_intro}
+df = data.frame(foo=1:6, bar=rep(c("a", "b"), 3))
+df
+```
+
+Once you have a dataframe, you can access a field using the `$` symbol:
+```{r dataframe_addfield}
+df$foo
+```
+
+also add more fields to it:
+
+```{r expand_dataframe}
+df$buz = exp(df$foo)
+df
+```
+
+Working with datasets
+---------------------------
+
+Check out the [R cheatsheet](http://stanford.edu/class/psych252/cheatsheets/index.html#r-cheatsheet) on the class site for some common dataset manipulations!
+
+### An interlude on R data
+
+Although it's possible to create a dataframe from scratch (as demonstrated above) in most cases you'll be reading data into R that was created elsewhere. It's useful at this point to introduce two concepts that govern how R thinks about accessing data. When dealing with data that are saved in a file somewhere on your computer, R has the concept of the *working directory*. Any functions that read or write files to or from the disk will take as an argument a filename, and the filename you give should be a path relative to your working directory. You can change the working directory either by calling the `setwd()` function or by using the GUI tools in the R or RStudio apps.
+
+Assigning some value to a variable creates a new object in the *workspace*, which you can think of as R's "working memory." Any object in the workspace can be immediately referenced in a line of code. You can open a pane in RStudio that will show you the name of every object in your workspace along with some information about those objects, and you can also get a vector of these names with the `ls()` function. To remove an object from your workspace, use the `rm()` function.
+
+A sidenote on data storage: Most of the data we'll be using is in *csv* format, which stands for "comma separated values." This is a plain-text format where commas divide columns and rows are placed on new lines. Because the data are stored as plain text, you can view (and edit) them in a basic text editor. The csv format is also advantageous relative to proprietary binary formats (like `.xlsx` or `.mat`) because pretty much any statistical application will contain routines to read and write these files.
+
+### Exploring the data
+
+To illustrate the basic process of importing and exploring a new data set, we turn to an example dataset stored in the file `earlydeaths.csv`. In this dataset, each juvenile death in the County (*n* = 350) is labeled by the year it occurred (`time` = 1, 2 or 3; corresponding to 1990-91, 1992-93, 1994-95), and by the cause of death (`cause` = "maltreatment" or "other").
+
+Let's start by loading in the data:
+
+```{r load_earlydaths}
+df_death = read.csv("http://stanford.edu/class/psych252/data/earlydeaths.csv")
+```
+
+If you look at the Environment table, you can see that this **dataframe** is composed of 2 **variables** that each has 350 observations. In this case, each observation represents a single death, and the 2 variables tell us information about that death (the time and cause). 
+
+When you load in a dataset, you'll want to explore it a bit so you get a feel for the kind of data it contains (and to ensure that it was loaded properly). First, some of the basic functions you'll find yourself using to explore the data are `str()`, `head()`, and `summary()`. These all do somewhat different things, which you can likely deduce from their output and help files:
+
+```{r explore_deaths}
+str(df_death)
+head(df_death)
+summary(df_death)
+```
+
+For every dataset we encounter in this course, we will ask two broad questions: (1) "What relationships among variables would be interesting to study?" and (2) "What mechanism (causal or otherwise) might give rise to those relationships?" For this dataset, for example, we might be interested in the relationship between time and cause of death. One mechanism that might lead to an increasing relationship is an increase in maltreatment *cases* over time, many of which result in death. This would be a news-worthy result! On the other hand, maybe a larger overall population could be the mechanism: this would lead to an increase in maltreatment deaths over time (simply because more people are treated), but also an increase in other kinds of deaths. This would not be as news-worthy. Once these questions have been posed, we can select appropriate statistical tests to conduct. Otherwise, the results are not particularly meaningful. 
+
+To better answer this question, we probably don't want a separate record of each death, the way `df_death` is formatted; instead, we probably want to sum up the number of deaths that occurred from each cause each year. To do this, we'll summarize your dataframe using the `dplyr` package. `dplyr` contains many functions to help tidy up and reshape data frames. In using dplyr you will want to refer often to the [dplyr Data Wrangling Cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf). Let's load dplyr:
+
+```{r Load dplyr}
+library(dplyr)
+```
+
+### Data types: Integers vs. factors 
+First, we'll use `dplyr` to add a new variable to our data frame. Currently, each year is labeled as 1, 2, and 3. 
+We might want to treat some variables as qualitative, nominal **factors** rather than continuous, numeric **integers**. In R, we must specify which variables to treat as factors if the **levels** (i.e., unique values) of the variable are composed of numbers instead of strings. Note that if the variable (e.g., "Subid") *levels* start with a letter (e.g., "subject1", "subject2") R will automatically interpret the variable as a *factor*. If the variable levels start with a number (e.g., "1", "2"), R will automatically interpret the variable as an *integer*. If you want the variable interpreted differently, you have to tell R.
+
+The variable `time` codes the year as an integer (1, 2, 3). We instead want to treat each year as a factor, so we'll use the `mutate()` function to create a new factor, `year`. The `levels` keyword argument specifies the values that `time` can take (1, 2, 3), and the `labels` argument assigns a label for each level. For example, the first element in `labels`, assigns the label "1990-91" label to time 1.
+
+```{r Mutate}
+death_year = df_death %>%
+  mutate(year = factor(time, levels = 1:3, labels = c('1990-91', '1992-93', '1994-95')))
+
+summary(death_year)
+```
+
+Note that what we did with the `%>%` is called **piping**, and `%>%`is called the pipe operator. The pipe operator uses the output of the thing on its left as the first argument to the function on its right. For example, in the above code the pipe operator passes `df_death` dataframe in to the 'data' argument of the `mutate` function.
+
+Because `year` is now coded as the correct data type (a factor), we can see that `summary` gives a more useful summary of the data. `time` is still coded as an integer, so the summary is nonsense: we don't care what the 'mean' year in our dataset is, because `time` is not supposed to be a continuous value! By contrast, the summary for `year` tells us something useful about our data frame: how many deaths were logged each year.
+
+### Summarizing data
+Next, we'll use the `summarise()` and `group_by()` functions to summarize the `death_year` data_frame. `group_by()` specifies all of the datapoints in your data frame that go together: for example, we want a summary of the number of deaths from each cause by year, so we'll group by `cause` and `year`. (If you're used to analyzing datasets in Excel: this is similar to specifying the variables that go into your pivot tables.)
+
+`summarise()` returns summary statistics of all the data points in a group. In this case, we just want to know the number of deaths of each cause by year, so we'll use the function `n()`. `n()` returns the number of rows in each group. Since each row in `death_year` corresponds to a single death, `n()` will return the number of deaths from each cause by year.
+
+```{r Summarise}
+death_summary = death_year %>%
+  group_by(year, cause) %>%
+  summarise(n_deaths = n())
+
+death_summary
+```
+
+Our original dataframe, `df_death`, had 350 rows, one for each death. Because we grouped the data by year (1990-91, 1992-93, 1994-95) and cause (maltreat, other), our summary data frame, `death_summary` has 3 x 2 = 6 rows. 
+
+The nice thing about `summarise()` is that you can easily plot a summary of the data! In the next section, we'll draw a line plot with two lines: one showing the number of deaths by maltreatment each year, and the other showing deaths from other causes. For this, we'll use the `ggplot2` package.
+
+Visualizing data with ggplot2
+---------------------------
+
+For some plotting examples (and code), check out the [Plotting Examples page](http://stanford.edu/class/psych252/plots/index.html) on the class site!
+
+We're now going to practice, very briefly, plotting in R. There are many packages available for this purpose and they all have advantages and disadvantages. `ggplot()` is a good place to start and is hopefully intuitive to understand.
+
+Again, check out the [R cheatsheet](http://stanford.edu/class/psych252/cheatsheets/index.html#r-cheatsheet) on the class site for some `ggplot`-ing basics!
+
+Let's first load the `ggplot2` package so that we can use it, along with some packages to help us make our plots prettier (`RColorBrewer` and `ggthemes`):
+
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+Now, let's turn to our `death_summary` dataframe and see what we can do with it. In the section above, we used `dplyr` to create our summary: `death_summary` shows the total number of deaths of each cause each year. In this section, we'll make a line plot showing the number of deaths from each cause over time. Each row in `death_summary` is treated as a separate data point in our plot. 
+
+ggplot creates a plot "object", which we will store in `death_plot`. Each plot object contains a list of commands that are strung together with `+`. We'll build up our plot by adding commands one at a time, so that we see what each command can do.
+
+```{r Create plot object}
+death_plot = ggplot(data = death_summary, aes(x = year, y = n_deaths, group = cause, color = cause))
+```
+
+This line of code is pretty complicated, so let's break it down! 
+
+First off, we chose a *dataframe* to plot from. The keyword argument `data = death_summary` tells ggplot to use the `death_summary` dataframe to make a plot. 
+
+Next, we chose some `aesthetic mappings`, which are specified with the `aes(...)` command. Aesthetic mappings are rules that tell us how variables in the dataframe relate to visual elements of the plot. For example `x = year` specifies that year will be on the x-axis, and `y = n_deaths` shows that the number of deaths will be on the y-axis.
+
+We also want to draw two lines in our plot: one for deaths for maltreatment and the other for deaths of all other causes. This will allow us to visually inspect whether deaths from maltreatment have increased at the same pace as death from all other causes. We used two aesthetic mappings: `group = cause` tells ggplot to group datapoints together by cause of death (thus creating two lines), and `color = cause` tells ggplot to give each cause of death a different color (thus assigning a different color for each line).
+
+Now let's add a "layer" of visualization, which ggplot calls a "geom".
+
+```{r Add geom_point}
+death_plot = death_plot + 
+  geom_point()
+
+print(death_plot)
+```
+
+As you can see, `geom_point()` draws points in two colors, one for each cause of death. Let's draw some lines to connect them!
+
+```{r Add geom_line}
+death_plot = death_plot + 
+  geom_line()
+
+print(death_plot)
+```
+
+This is starting to look like a proper plot! `geom_line()` draws lines to connect our data points together.
+
+Now let's beautify our plot. Let's start by changing the x-axis (`xlab()`) and y-axis (`ylab()`), and giving the plot a title (`ggtitle()`)
+
+```{r Add axis labels}
+death_plot = death_plot +
+  xlab('Year') +
+  ylab('Number of deaths') +
+  ggtitle('Number of deaths by year')
+
+print(death_plot)
+```
+
+Now, let's change the legend text using `scale_color_discrete`.
+
+```{r Change legend text}
+death_plot = death_plot +
+  scale_color_discrete('Cause', labels = c('Maltreatment', 'Other'))
+
+print(death_plot)
+```
+
+We're almost done! Let's change the look of the plot by specifying a new theme. The `ggthemes` package (more information [here](https://github.com/jrnold/ggthemes)) comes with a lot of good-looking themes to help you customize the look of your plots. I personally like `theme_hc()`, since it gives the plot a clean, minimalist look.
+
+```{r Change plot theme}
+death_plot = death_plot +
+  theme_hc()
+
+print(death_plot)
+```
+
+Now, let's explore! Below, I've placed all of the code that we used to generate the plot in a single chunk. Try changing the code and seeing how the plot changes.
+
+**Exercises:**
+
+* What happens if you get rid of the color aesthetic?
+* What happens if you change the group aesthetic to `group = 1`, or `group = year`?
+* Try a different theme! Some possibilities are: `theme_few()`, `theme_excel()`, or `theme_fivethirtyeight()`
+* Change `scale_color_discrete` to `scale_color_brewer`, and add a new argument, `palette = '[palette name here]'`, to change the line colors. The package `RColorBrewer` comes with many color palettes to help you customize your plots. Try the `Set1` palette to get started.
+* Use a new command, `theme`, to change the font size. **Hint:** we haven't covered this yet---you'll have to Google how to do this! In general, you'll often have to figure out how to do things in R that you haven't done before, especially when you're just getting started. You're welcome to use this workshop as a reference in the future, but our advice is: Google things quickly and often to get yourself unstuck! Googling things is the first step towards becoming independent and self-sufficient in R.
+
+```{r Play with the plot}
+ggplot(data=death_summary, aes(x = year, y = n_deaths, color = cause, group = cause)) +
+  geom_point() +
+  geom_line() +
+  xlab('Year') + 
+  ylab('Number of deaths') +
+  ggtitle('Number of deaths by year') +
+  scale_color_discrete('Cause', labels = c('Maltreatment', 'Other')) +
+  theme_hc()
+```
+
+Basic statistics
+-----------------------------
+(YUAN CHANG, ADD CONTENT HERE?)
+
+You have now gone through the basic steps you'll take to analyze any dataset: loading the data, exploring the data, cleaning up the data, creating a summary, plotting data, and running basic statistics on it. In the next part of the tutorial, you'll apply all of these skills to analyze a dataset yourself.
