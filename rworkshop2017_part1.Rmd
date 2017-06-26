@@ -105,7 +105,6 @@ a+b
 b-a^2
 ```
 
-
 Using functions
 ---------------
 
@@ -122,12 +121,13 @@ log(1.75)
 A frequently-used function is `c()`, which stands for *concatenate*. This takes a sequence of arguments and sticks them together into a *vector*, which we'll explain a little bit more about below. All you need to know now is that most of the built in functions for descriptive statistics (and there are many of these!) expect to receive a vector or something like it.
 
 ```{r basic_vectors}
-a = c(1.5, 4, 3)
-a
-cat(a)#note that now the numbers appear as characters
-sum(a) # Sum
-mean(a) # Average
-sd(a) # Standard deviation
+# Imagine that you wanted to store the reaction times of a participant in the variable rt:
+rt = c(1.5, 4, 3, 2.2, 2.3, 3.5)
+
+# We can then caclulate the sum, mean, standard deviation using the corresponding functions
+sum(rt) # Sum
+mean(rt) # Average
+sd(rt) # Standard deviation
 ```
 
 You can also *compose* functions, which allows for more expressive code:
@@ -136,6 +136,22 @@ You can also *compose* functions, which allows for more expressive code:
 a = c(-2, 4, 5.5)
 sum(a)
 sum(abs(a))
+```
+
+Most importantly, you can *write* your own functions. For example, there's no function to calculate standard error of the mean, but it's commonly used in making error bars:
+
+```{r}
+## Format is:
+# Name_of_function = function(input_argument) {operation on input argument}
+
+sem = function(x) {
+  sd(x,na.rm = T) / sqrt(length(x))
+}
+
+d1 = rnorm(30,0,3)
+mean(d1)
+sd(d1)
+sem(d1)
 ```
 
 ### Keyword Arguments
@@ -465,6 +481,165 @@ ggplot(data=death_summary, aes(x = year, y = n_deaths, color = cause, group = ca
 
 Basic statistics
 -----------------------------
-(YUAN CHANG, ADD CONTENT HERE?)
+### Quick revision of core statistics concepts:  
+* What is statistics and what is it good for?  
+* What is the difference between descriptive and inferential statistics? 
+* What are some examples of descriptive statistics?  
 
-You have now gone through the basic steps you'll take to analyze any dataset: loading the data, exploring the data, cleaning up the data, creating a summary, plotting data, and running basic statistics on it. In the next part of the tutorial, you'll apply all of these skills to analyze a dataset yourself.
+```{r descriptive_stats}
+# Set seed for consistency
+set.seed(2)
+d1 = rnorm(20, mean = 10) # draws 20 numbers from a normal distribution with mean = 0, sd = 1;
+d2 = rnorm(20, mean = 10) # draws 20 numbers from a normal distribution with mean = 0, sd = 1;
+mean(d1)
+mean(d2)
+```
+
+Take for example, the vector d1 stores the memory scores of patients in a clinical trial who took the drug Chemical X, and d2 stores the memory scores of control patients who did not take the drug.  
+
+The mean of d1 is `r round(mean(d1),2)` and the mean of d2 is `r round(mean(d2),2)`. Can we conclude that taking Chemical X improves memory scores? Why or why not?  
+
+* What are some examples of inferential statistics?   
+    
+### T-tests
+```{r t-tests}
+# Are d1 and d2 significantly different?
+t.test(d1, d2)
+
+# Is d1 significantly different from 10?
+t.test(d1,mu = 10)
+```
+
+### Paired t-tests
+When do you use paired t-tests? How are they different from Two sample t-tests?
+```{r paired t-tests}
+set.seed(1)
+d3 = NULL
+d3$pre = rnorm(20, mean = 10) # draws 20 numbers from a normal distribution with mean = 0, sd = 1;
+d3$post = d3$pre + rnorm(20 ,mean = 0.5, sd = 1) # add a random number drawn from a normal distribution with mean 0.5 and SD = 1 to simulate a positive effect
+
+# Make dataframe, and inspect data!
+d3 = as.data.frame(d3) 
+
+# What does this mean?
+t.test(d3$pre,d3$post, paired = TRUE)
+
+# Note that this is also equivalent to a one-sample t-tests of the differences against 0.
+t.test(d3$post-d3$pre, mu = 0)
+
+```
+
+### Linear Models
+t-tests are useful, but they have some limitations.  
+    1. What if you have more than one level of the independent variable (e.g., three doses of a drug). You could do three t-tests: level 1 vs. level 2, level 2 vs. level 3, and level 1 vs. level 3, but that's really inelegant and you aren't taking advantage of all your data.  
+    2. What if you have two independent variables that you are interested in examining together (e.g., the dosage, and method of adminstration?  
+For these cases, you would want to use linear modeling. Before talking about the linear modeling, it's often helpful to talked about linear regression, which you probably learned a little about in high school. Stil remember y = ax + b, or in Singapore, they'd say, y = mx + c? What does this equation try to do? 
+
+```{r}
+# Generate fake regression data
+fake_regress = NULL;
+fake_regress$x = rnorm(30,68,10)                  
+fake_regress$y = fake_regress$x * 5.49 - 222 + rnorm(30,50,50)
+fake_regress = as.data.frame(fake_regress)
+
+qplot(fake_regress$x,fake_regress$y)
+```
+
+How do you find the values of m and c?    
+
+How do you know variable x is statistically associated with variable y?  
+
+When we run a linear model, we are doing something very similar, except that there is a lot more flexibility with the types of analysis we can do. For example, we can now tests the relationship between a single dependent variable and many predictor variables (for a good description of how the general linear model extends beyond linear regression, see http://www.uta.edu/faculty/sawasthi/Statistics/stglm.html). In any case, the intuition is similar - one tries to estimates a coeefficient (e.g., by minimizing least squares), and then tests if the coefficient is greater than 0 to evaluate if there is a significant relationship.  
+
+To give you a taste of running linear models, let's run a couple of tests with the Toothgrowth datase:
+
+```{r}
+?ToothGrowth # take a quick read to see the details of the dataset. 
+```
+
+First plot the data, we'll use `qplot` to understand how `len` (tooth length) depends on `dose` (amount of Vitamin C) and `supp` (delivery method). 
+
+```{r}
+d4 = ToothGrowth;
+ggplot(d4, aes(x=dose,y=len, color=supp)) +
+  geom_point() +
+  geom_smooth(se=F, method="lm")
+```
+
+Describe what you see.  
+
+Let's first test to see if dose and administration method have additive effect on tooth length:  
+
+```{r}
+res1 = lm(len ~ dose + supp, d4); 
+summary(res1)
+```
+
+How do you interpret this table?  
+Thought question: Take a moment to interpret the coefficients of the model. What are the units?    
+
+Now, let's test if there is an interaction between adminstration method and dosage. Before we run this, what is an interaction?  
+```{r}
+res2 = lm(len ~ dose * supp, d4); 
+summary(res2)
+```
+
+How does the interaction relate to the plot?  
+
+Should there be an interaction in the model? What does it mean? How important is it?  
+```{r}
+anova(res1,res2)
+```
+
+**Challenge question: The lm is very general, and it was a pretty big deal in statistics when it was proven that the many statistical tests you've learned in intro to stats (e.g., t-tests, anova) can be expressed in lm. Try re-running the one-sample t-test above using lm. This is a little bit of a trick question honestly (hint there's not really an independent variable in a one-sample t-test)
+
+**Not covered: Contrast coding, linear mixed effects modeling   
+
+
+### Bonus Material: Simulations
+R is also useful for simulations. There are many reasons to do simulations, including inferential statistics, bootstrapping, and my personal favorite, just checking our intuitions. For example, when building computational models, it's often useful to simulate data using the model, and observe the pattern of behavior predicted by the model under different "settings" (i.e. model parameters). This sounds complicated, but it's actually not too different from how we generated data for d1, d2 and d3 above. We simulated the data by assuming it came from a normal distribution with a certain mean and sd. In the case of d3, we simulated an effect by adding a random number to the initial scores. 
+
+When running simulations, we often run more than 1 iteration to see reliable patterns in the data. As an example, let's use simulations to convice ourselves that t-tests have the appropriate false positive rate. Before we start, let's talk about what's a false positive?
+
+```{r false-positive ttest}
+# Set seed for consistency
+set.seed(4)
+d1 = rnorm(30, mean = 10) # draws 30 numbers from a normal distribution with mean = 0, sd = 1;
+mean(d1)
+
+# Is d1 significantly different from 10
+t.test(d1,mu = 10)
+```
+
+We'll run 10,000 t-tests with standard, normally-distributed data from a made up 30-person, single-measurement experiment (the command for sampling from a normal distribution is `rnorm`), and ask, what's the mean number of "significant" results?
+
+First do this using a `for` loop.
+
+```{r}
+p.values = NULL
+# What does each iteration of the for loop do?
+for (i in 1:10000 ) {
+  fake_sample = rnorm(30,10,1)
+  res1 = t.test(fake_sample,mu=10)
+  p.values[i] = res1$p.value
+}
+
+frac_sig = mean(p.values < 0.05)
+cat(paste("False Positive Rate ="), frac_sig)
+```
+
+To show that there is an infinite number of ways to do the same thing... we'll do the exact same simulation using the `replicate` function:
+
+```{r}
+p.values = NULL
+foo = function(n) {
+  fake_sample = rnorm(n,10,1)
+  res1 = t.test(fake_sample,mu=10)
+  res1$p.value < 0.05
+  }
+
+frac_sig = mean(replicate(10000,foo(30)))
+cat(paste("False Positive Rate ="), frac_sig)
+```
+
+You have now gone through the basic steps (and more0 you'll take to analyze any dataset: loading the data, exploring the data, cleaning up the data, creating a summary, plotting data, and running basic statistics on it. In the next part of the tutorial, you'll apply all of these skills to analyze a dataset yourself.
