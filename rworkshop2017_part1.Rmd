@@ -642,4 +642,4 @@ frac_sig = mean(replicate(10000,foo(30)))
 cat(paste("False Positive Rate ="), frac_sig)
 ```
 
-You have now gone through the basic steps (and more0 you'll take to analyze any dataset: loading the data, exploring the data, cleaning up the data, creating a summary, plotting data, and running basic statistics on it. In the next part of the tutorial, you'll apply all of these skills to analyze a dataset yourself.
+You have now gone through the basic steps (and more) you'll take to analyze any dataset: loading the data, exploring the data, cleaning up the data, creating a summary, plotting data, and running basic statistics on it. In the next part of the tutorial, you'll apply all of these skills to analyze a dataset yourself.
