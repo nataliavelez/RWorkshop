@@ -8,7 +8,9 @@ author: Yuan Chang Leong
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-I wanted to make explicit some of the common pattern structures of code that we've been using again and again in the class. I'll add to them as I think of more. For each, I'll first write in comments the "general syntax", and then an example of it.
+I wanted to make explicit some of the common pattern structures of code that we've been using again and again in the class. I'll add to them as I think of more. For each, I'll first write in comments the "general syntax", and then an example of it. 
+
+Click [here](https://htmlpreview.github.io/?https://github.com/nataliavelez/RWorkshop/blob/master/Resources/Common_R.html) to see knitted version of the file
 
 ### Loading libraries and installing packages
 
