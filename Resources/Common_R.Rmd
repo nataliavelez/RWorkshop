@@ -1,0 +1,137 @@
+---
+title: "Common R Syntax"
+output: html_document
+author: Yuan Chang Leong
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I wanted to make explicit some of the common pattern structures of code that we've been using again and again in the class. I'll add to them as I think of more. For each, I'll first write in comments the "general syntax", and then an example of it.
+
+### Loading libraries and installing packages
+
+```{r}
+# Installing packages: install.packages('<name of package>')
+# install.packages('dplyr') # Commenting this out so that it will knit
+
+# Load libraries: library(<name of library>)
+library(dplyr)   
+library(NHANES)  
+library(ggplot2) 
+```
+
+### Manipulating the dataframe
+This includes selecting columns, filtering rows, creating new variables. 
+
+```{r}
+# Try to always remember the same pattern
+# <data.frame> = <data.frame> %>%
+#   select(<columns to keep>) %>%
+#   filter(<logical statement to determine which row to keep>) %>%
+#   mutate(<new variable> = XXXX)
+
+NHANES_adult = NHANES %>% 
+  select(Age, Smoke100, Height) %>%
+  filter(Age > 17 & !is.na(Smoke100) & !is.na(Height)) %>%
+  mutate(HeightInInches = Height * 0.39)
+
+head(NHANES_adult)
+```
+
+
+### Summarizing the dataframe
+You do this when you want to aggregate (i.e. summarize) over certain variables. Again the syntax is usually near-identical.  
+
+Another trick to remember - group_by is almost ALWAYS followed by summarise
+
+```{r}
+# <summary dataframe> = <full dataframe> %>%
+#    group_by(<variable to group by>) %>%
+#    summarise(<name of summary variable = <name of function>(<name of variable>))
+
+# The common functions that go with summarize include, n() which counts, mean() which take the mean, var() which takes the variance, sd() which takes the sd:
+
+data_summary = NHANES_adult %>%
+  group_by(Smoke100) %>%
+  summarise(n = n(), 
+            meanHeight = mean(Height),
+            varHeight = var(Height),
+            sdHeight = sd(Height))
+
+head(data_summary)
+```
+
+### Writing a function
+```{r}
+#<name of function> = function(<input1>, <input2>, ....){
+# what you want the function to do
+#}
+
+sumOf2Numbers = function(x,y){
+  z = x + y
+  return(z)
+}
+
+thisSum = sumOf2Numbers(3,4)
+thisSum
+```
+```{r}
+# You can also set default values for the inputs:
+sumOf2Numbers_wDefaults = function(x = 1 ,y = 2){
+  z = x + y
+  return(z)
+}
+
+# if you don't give it any inputs, the function will use the default values
+thatSum = sumOf2Numbers_wDefaults()
+thatSum
+```
+```{r}
+# But you can overwrite the default
+# The following line of code would add 4 to the default value of x.
+anotherSum = sumOf2Numbers_wDefaults(y = 4)
+anotherSum
+```
+
+
+### Plotting
+The syntax for ggplot is also usually very systematic as well:   
+```{r}
+# ggplot(<data.frame>, aes(<aesthetic mapping, which depends on plot type>)) +
+#     geom_XXXX(<settings of the plot>)
+```
+
+Note that ggplot only takes in data.frames as inputs. If you have a vector, you have to convert it into a dataframe using data.frame() or as.data.frame().  
+
+#### Histogram
+```{r}
+# Again, try to see if you fit the following format:
+# ggplot(<data.frame>, aes(<aes mapping, which depends on plot type>)) +
+#     geom_XXXX(<settings of the plot>)
+
+# Histogram
+ggplot(NHANES_adult, aes(Height)) +
+  geom_histogram()
+
+# what if you wanted to set the number of bins (how many bins there are)?
+ggplot(NHANES_adult, aes(Height)) +
+  geom_histogram(bins = 50)
+
+# what if you wanted to set the bin width (how big is each bin)?
+ggplot(NHANES_adult, aes(Height)) +
+  geom_histogram(binwidth = 10)
+
+# what if you wanted different colors of Smoke100
+ggplot(NHANES_adult, aes(Height, fill = Smoke100)) +
+  geom_histogram()
+
+# The above plot will "stack" Smokers and Non-smokers on top of one another by default
+# Instead, let's try to put them side by side
+ggplot(NHANES_adult, aes(Height, fill = Smoke100)) +
+  geom_histogram(position = 'dodge')
+
+```
+
+I'll try to add the following when I get a chance: Sampling, Shuffling, Line plots, Bar plots, t-tests.
