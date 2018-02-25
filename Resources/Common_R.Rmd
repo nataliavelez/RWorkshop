@@ -98,6 +98,88 @@ anotherSum
 ```
 
 
+## Statistical Tests   
+
+### t-tests
+
+We use the t-test to test if two means are statistically different (alternative = "two.tailed"). If we have a directional hypothesis (e.g., mean A > mean B or mean B < mean A), we can also specify it in our test (alternatve = "greater" or alternative = "less"). Later in the quarter, you'll learn that there are actually two types of tests - the two-sample t-test when you have two groups (this is the one you've been running so far), and the paired-sample t-test when you have paired data.  
+
+```{r}
+# Syntax of a t-test:
+# <output name> = t.test(<Dependent Variable> ~ <Independent Variable>, data = <name of input data frame>, alternative = "XXX")
+
+# First let's take a sample of 200 from NHANES_adult
+set.seed(123456)
+NHANES_sample = sample_n(NHANES_adult,200)
+
+ttestResult = t.test(Height ~ Smoke100, data = NHANES_sample, alternative = "two.sided")
+ttestResult
+```
+  
+### Correlation
+To measure the relationship between two <b>continuous</b> variables, we can calculate the correlation between them. In the slides, I used the function cor(), which calculates the correlation coefficient between the two variables. But cor() doesn't tell you if the correlation is statistically significant.  
+
+For that, we can use use the function cor.test() which does a t-test on the r value to see if it's significantly different from 0.  
+
+By default, these functions all run pearson's correlation. As you'll learn later in the quarter, there are actually different types of correlation (Kendall, Spearman) but Pearson is most commonly used. 
+
+
+```{r}
+# Syntax for cor: r = cor(<Variable1>, <Variable2>)
+# Syntax for cor.test: r_sig = cor.test(<Variable1>, <Variable2>)
+
+# Let's look at the correlation coefficient between Age and Height in NHANES_sample. Before computing the correlation, let's first visualize the relationship between the two:
+ggplot(NHANES_sample, aes(x = Age, y = Height)) +
+  geom_point() +
+  geom_smooth(method = lm)
+
+# Let's first use cor() to calculate the correlation coefficient
+r = cor(NHANES_sample$Height, NHANES_sample$Age)
+r
+
+# Now we use cor.test()
+r_sig = cor.test(NHANES_sample$Height, NHANES_sample$Age)
+r_sig
+```
+
+### Randomization Test
+We went over Randomization Test in Week 7's section, so I won't go over it again here. Briefly, the steps are as follows:  
+1. Compute the statistic of interest (e.g., diffHeight from NHANES_sample)
+2. Write a function that shuffles the labels, and recomputes the statistic of interest from the shuffled data
+3. Run the function many times (~5000)
+4. Compare the statistic of interest from the sample with the distribution obtained from running the function 5000 times.
+
+```{r}
+# Calculate diff Height from the sample
+dataSummary = NHANES_sample %>% 
+  group_by(Smoke100) %>%
+  summarize(meanHeight=mean(Height))
+
+diffHeight=diff(dataSummary$meanHeight)
+
+# Write function that shuffles the labels
+shuffleMeanNHANES = function(df){
+  df = df %>% mutate(Smoke100shuffled = sample(Smoke100))
+  
+  means = df %>% 
+    group_by(Smoke100shuffled) %>%
+    summarize(mean=mean(Height)) 
+  return(diff(means$mean))
+}
+
+# Run the function many times 
+shuffleDist = replicate(5000,shuffleMeanNHANES(NHANES_sample))
+
+# Compare original diffHeight to null distribution 
+pValue = mean(shuffleDist>= diffHeight)
+pValue
+
+ggplot(data.frame(shuffleDist),aes(shuffleDist)) + 
+  geom_histogram(bins=100) +
+  geom_vline(xintercept = diffHeight,color='blue')
+```
+
+
 ### Plotting
 The syntax for ggplot is also usually very systematic as well:   
 ```{r}
@@ -136,4 +218,4 @@ ggplot(NHANES_adult, aes(Height, fill = Smoke100)) +
 
 ```
 
-I'll try to add the following when I get a chance: Sampling, Shuffling, Line plots, Bar plots, t-tests.
+I'll try to add the following when I get a chance:  Line plots, Bar plots
