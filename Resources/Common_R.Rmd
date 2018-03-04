@@ -109,13 +109,32 @@ We use the t-test to test if two means are statistically different (alternative 
 # <output name> = t.test(<Dependent Variable> ~ <Independent Variable>, data = <name of input data frame>, alternative = "XXX")
 
 # First let's take a sample of 200 from NHANES_adult
-set.seed(123456)
+set.seed(4)
 NHANES_sample = sample_n(NHANES_adult,200)
+
+# Before running the t-test, you should try to plot the means of the two groups, with error bars indicating 95% confidence intervals
+dataSummary = NHANES_sample %>%
+  group_by(Smoke100) %>%
+  summarize(n=n(),
+            meanHeight=mean(Height),
+            varHeight=var(Height),
+            sdHeight = sd(Height),
+            crit_val_lower = qt(.025, n - 1),
+            crit_val_upper = qt(.975, n - 1),
+            ci.lower=meanHeight+(sqrt(varHeight)*crit_val_lower)/sqrt(n),
+            ci.upper=meanHeight+(sqrt(varHeight)*crit_val_upper)/sqrt(n))
+
+ggplot(dataSummary, aes(x=Smoke100, y = meanHeight)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper), width = 0.1, size = 0.5)
+
 
 ttestResult = t.test(Height ~ Smoke100, data = NHANES_sample, alternative = "two.sided")
 ttestResult
 ```
-  
+
+A two-tailed t-tests shows that the mean height of smokers (M = 172.4, SD = 9.90) is statistically greater than the mean height of non-smokers (M = 167.3, SD = 9.08); t(192) = -3.76, p = 0.0002). This supports our hypothesis that smokers are taller than non-smokers.
+
 ### Correlation
 To measure the relationship between two <b>continuous</b> variables, we can calculate the correlation between them. In the slides, I used the function cor(), which calculates the correlation coefficient between the two variables. But cor() doesn't tell you if the correlation is statistically significant.  
 
@@ -125,22 +144,32 @@ By default, these functions all run pearson's correlation. As you'll learn later
 
 
 ```{r}
+# Create a new sample with weight information
+NHANES_adultWeight = NHANES %>% 
+  select(Age, Smoke100, Height, Weight) %>%
+  filter(Age > 17 & !is.na(Smoke100) & !is.na(Height) & !is.na(Weight))
+
+NHANES_sampleWeight = sample_n(NHANES_adultWeight,200)
+
 # Syntax for cor: r = cor(<Variable1>, <Variable2>)
 # Syntax for cor.test: r_sig = cor.test(<Variable1>, <Variable2>)
 
-# Let's look at the correlation coefficient between Age and Height in NHANES_sample. Before computing the correlation, let's first visualize the relationship between the two:
-ggplot(NHANES_sample, aes(x = Age, y = Height)) +
+# Let's look at the correlation coefficient between Height and Weight in NHANES_sample. Before computing the correlation, let's first visualize the relationship between the two:
+ggplot(NHANES_sampleWeight, aes(x = Height, y = Weight)) +
   geom_point() +
   geom_smooth(method = lm)
 
 # Let's first use cor() to calculate the correlation coefficient
-r = cor(NHANES_sample$Height, NHANES_sample$Age)
+r = cor(NHANES_sampleWeight$Height, NHANES_sampleWeight$Weight)
 r
 
 # Now we use cor.test()
-r_sig = cor.test(NHANES_sample$Height, NHANES_sample$Age)
+r_sig = cor.test(NHANES_sampleWeight$Height, NHANES_sampleWeight$Weight)
 r_sig
 ```
+
+There is a statistically significant positive correlation between height and weight of the individuals in NHANES (r = 0.37, p = 8.96e-08).
+
 
 ### Randomization Test
 We went over Randomization Test in Week 7's section, so I won't go over it again here. Briefly, the steps are as follows:  
