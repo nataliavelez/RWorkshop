@@ -19,6 +19,7 @@ Click [here](https://htmlpreview.github.io/?https://github.com/nataliavelez/RWor
 # install.packages('dplyr') # Commenting this out so that it will knit
 
 # Load libraries: library(<name of library>)
+library(tidyr)
 library(dplyr)   
 library(NHANES)  
 library(ggplot2) 
@@ -90,6 +91,8 @@ sumOf2Numbers_wDefaults = function(x = 1 ,y = 2){
 thatSum = sumOf2Numbers_wDefaults()
 thatSum
 ```
+
+
 ```{r}
 # But you can overwrite the default
 # The following line of code would add 4 to the default value of x.
@@ -168,7 +171,32 @@ r_sig = cor.test(NHANES_sampleWeight$Height, NHANES_sampleWeight$Weight)
 r_sig
 ```
 
-There is a statistically significant positive correlation between height and weight of the individuals in NHANES (r = 0.37, p = 8.96e-08).
+There is a statistically significant positive correlation between height and weight of the individuals in NHANES (r = 0.37, p = 8.96e-08).  
+
+
+### Chi-Square Test
+You use a chi-square test to test for relationships between categorical variables. The 
+
+```{r}
+NHANES_SmokeGender = NHANES %>% 
+  select(Smoke100, Gender) %>%
+  filter(!is.na(Smoke100) & !is.na(Gender))
+
+# Step 1: Summarize the data to get the counts in each cell
+dataSummary_SmokeGender = NHANES_SmokeGender %>%
+  group_by(Smoke100,Gender) %>%
+  summarize(n=n())
+dataSummary_SmokeGender
+
+# Step 2: "Spread" the dataframe into a contingency table
+dataSummary_SmokeGender = dataSummary_SmokeGender %>%
+  spread(Smoke100, n)
+dataSummary_SmokeGender
+
+# Step 3: Run chisq.test
+chisq.test(dataSummary_SmokeGender[,2:3])
+```
+
 
 
 ### Randomization Test
