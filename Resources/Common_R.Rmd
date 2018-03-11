@@ -197,6 +197,65 @@ dataSummary_SmokeGender
 chisq.test(dataSummary_SmokeGender[,2:3])
 ```
 
+### Linear Regression 
+Can be used to examine the effect of multiple independent variables on one dependent variable. Dependent variable has to be continuous (e.g., height), but the independent variables can be categorical (e.g., smoke, gender) or continuous (e.g., age).
+
+
+```{r}
+set.seed(3)
+NHANES_SmokeGenderAge = NHANES %>% 
+  select(Smoke100, Gender, Age, Height) %>%
+  filter(!is.na(Smoke100) & !is.na(Gender) & !is.na(Age) & !is.na(Height)) %>%
+  sample_n(size = 200)
+
+# Syntax: summary(lm(<DV> ~ <IV1> + <IV2> + ..., data = <data.frame>))
+# Let's run a series of lm to predict height from smoke, gender, age
+
+# Let's start by looking at the effect of Smoke on Height
+summary(lm(Height ~ Smoke100, NHANES_SmokeGenderAge))
+
+# This analysis is in fact mathematically equivalent to the t-test assuming equal variance
+t.test(Height ~ Smoke100, NHANES_SmokeGenderAge, var.equal = TRUE)
+
+# Plot
+dataSummary = NHANES_SmokeGenderAge %>% 
+  group_by(Smoke100) %>%
+  summarize(n=n(),
+            varHeight=var(Height),
+            meanHeight=mean(Height),
+            ci.upper=meanHeight+(sqrt(varHeight)*1.96)/sqrt(n),
+            ci.lower=meanHeight-(sqrt(varHeight)*1.96)/sqrt(n))
+
+ggplot(dataSummary, aes(x=Smoke100, y = meanHeight)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper), width = 0.1, size = 0.5) +
+  coord_cartesian(ylim=c(155,180))
+
+
+# Let's now look at the effect of Gender on Height
+summary(lm(Height ~ Gender, NHANES_SmokeGenderAge))
+
+# And the effect of Gender and Smoke on Height in the same model
+summary(lm(Height ~ Gender + Smoke100, NHANES_SmokeGenderAge))
+ 
+# Plot
+dataSummary = NHANES_SmokeGenderAge %>% 
+  group_by(Smoke100, Gender) %>%
+  summarize(n=n(),
+            varHeight=var(Height),
+            meanHeight=mean(Height),
+            ci.upper=meanHeight+(sqrt(varHeight)*1.96)/sqrt(n),
+            ci.lower=meanHeight-(sqrt(varHeight)*1.96)/sqrt(n))
+
+ggplot(dataSummary, aes(x=Smoke100, y = meanHeight, color = Gender)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = ci.lower, ymax = ci.upper), width = 0.1, size = 0.5)+
+  coord_cartesian(ylim=c(155,180))
+
+
+```
+
+
 
 
 ### Randomization Test
