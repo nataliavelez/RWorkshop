@@ -9,12 +9,12 @@ This part of the workshop is intended to give you a more realistic experience of
 
 ## Your dataset
 
-To begin, we'll load in a simple data file and store it as a [dataframe](http://www.r-tutor.com/r-introduction/data-frame) named `df_survey`. This data file is called `fieldsimul1.csv`. Likely voters (*n* = 240) were surveyed about their age, optimism, and a host of other factors. More specifically, these are all of the variables you'll encounter in this data frame:
+To begin, we'll load in a simple data file and store it as a [dataframe](http://www.r-tutor.com/r-introduction/data-frame) named `df_survey`. This data file is called `fieldsimul1.csv`. Likely voters (*n* = 200) were surveyed about their age, optimism, and a host of other factors. More specifically, these are all of the variables you'll encounter in this data frame:
 
 * age: Age of voters surveyed (20-75 years)
 * agecat: Age of voters surveyed, binned into groups of 20 years
 * party: Political party of voters (1=Democrat, 2=Republican, 3=Other)
-* prop54: Whether voters reported if they would vote for Prop 54 (Racial Privacy Initiative)
+* prop54: Whether voters reported if they would vote for Prop 54 (Racial Privacy Initiative; 1=yes, 2=no, 3=unsure)
 * optmism: Level of optimism (0-11)
 * recall: Do you think the governor should be recalled? (1=yes, 2=no, 3=unsure)
 * recallq: Do you think the governor should be recalled? (1=yes, 0=unsure, -1=no)
@@ -23,6 +23,8 @@ To begin, we'll load in a simple data file and store it as a [dataframe](http://
 
 ```{r load df_survey}
 # Load libraries
+install.packages(c('tidyr', 'lme4'))
+
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -46,7 +48,7 @@ Here we can see that this **dataframe** is composed of 7 **variables** that each
 **Exercise:** As an example, let's look at all the information for participant 5 by looking at the 5th row of df_survey:
 
 ```{r observeRow_df_survey}
-# FILL IN CODE HERE
+df_survey[5,]
 ```
 
 This shows us that participant 5 is 25 years old, and has an optimism score of 6.
@@ -73,20 +75,21 @@ Note: you need to uncomment (remove the #) the commented lines, otherwise they w
 **Exercise 1:** Get the last element of x
 ```{r}
 x = 25:90
-#x[90,]
+length(x)
 ```
 
 **Exercise 2:** Create a scatter plot of responses to the recall question by age
 ```{r}
-#ggplot(data=df_survey, aesthetic(x = age, y = recallq)) +
-#  geom_point()
+ggplot(data=df_survey, aes(x = age, y = recallq)) +
+  geom_point()
 ```
 
 **Exercise 3:** Here's a more general problem you will run into, simply, how to do something you've never done before! Search google and figure out how to plot a **polynomial** regression line (e.g. y = x^2) onto this ggplot code:
 
 ```{r}
 ggplot(data = df_survey, aes(x = age, y = optmism, color = factor(party))) +
-  geom_point()
+  geom_point() +
+  stat_smooth(method = 'lm', se = FALSE)
 ```
 
 ## Data wrangling
@@ -101,14 +104,22 @@ str(df_survey)
 
 **Exercise:** Change `agecat`, `party`, `prop54`, and `recall` into factors with informative labels. Check the description of the dataset above for more information. (Note that we'll be working with a new dataframe, `df_survey_tidy`, so that `df_survey` is not changed. That way, if you make a mistake, you can start from scratch!)
 
+* age: Age of voters surveyed (20-75 years)
+* agecat: Age of voters surveyed, binned into groups of 20 years
+* party: Political party of voters (1=Democrat, 2=Republican, 3=Other)
+* prop54: Whether voters reported if they would vote for Prop 54 (Racial Privacy Initiative; 1=yes, 2=no, 3=unsure)
+* optmism: Level of optimism (0-11)
+* recall: Do you think the governor should be recalled? (1=yes, 2=no, 3=unsure)
+* recallq: Do you think the governor should be recalled? (1=yes, 0=unsure, -1=no)
+
 ```{r Cleaning exercise: mutate}
 df_survey_tidy = df_survey %>%
   mutate(party = factor(party, levels = 1:3, labels = c('Democrat', 'Republican', 'Other')),
-         agecat = YOUR_CODE_HERE,
-         prop54 = YOUR_CODE_HERE,
-         recall = YOUR_CODE_HERE)
+         prop54 = factor(prop54, levels = 1:3, labels = c('yes', 'no', 'unsure')),
+         recall = factor(recall, levels = 1:3, labels = c('yes', 'no', 'unsure')))
 
 str(df_survey_tidy)
+summary(df_survey_tidy)
 ```
 
 Ah, much better. Now let's use the `rename` function to rename some of our variables. It's driving me crazy that one of the variables is misspelled!
@@ -117,7 +128,7 @@ Ah, much better. Now let's use the `rename` function to rename some of our varia
 
 ```{r Cleaning exercise: rename}
 df_survey_tidy = df_survey_tidy %>%
-  rename(YOUR_CODE_HERE)
+  rename(optimism = optmism)
 
 head(df_survey_tidy)
 ```
@@ -128,7 +139,9 @@ Thanks for fixing that! Now, the variable has two variables that are largely red
 
 ```{r Cleaning exercise: select}
 df_survey_select1 = df_survey_tidy %>%
-  select(YOUR_CODE_HERE)
+  select(c(recall, prop54, party, age, optimism, agecat))
+
+head(df_survey_select1)
 ```
 
 Alternatively, you could use select to *deselect* columns. This is really similar to what you did above but, if you add a `-` to the list of variable names (`-c(...)`), dplyr instead keeps all of the variables *except* for the ones you've specified with `select`.
@@ -137,7 +150,9 @@ Alternatively, you could use select to *deselect* columns. This is really simila
 
 ```{r Cleaning exercise: deselect}
 df_survey_select2 = df_survey_tidy %>%
-  select(YOUR_CODE_HERE)
+  select(-c(recallq))
+
+head(df_survey_select2)
 ```
 
 ## Analyze your dataset

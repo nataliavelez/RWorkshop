@@ -144,8 +144,8 @@ Most importantly, you can *write* your own functions. For example, there's no fu
 ## Format is:
 # Name_of_function = function(input_argument) {operation on input argument}
 
-sem = function(x) {
-  sd(x,na.rm = T) / sqrt(length(x))
+sem = function(foo) {
+  sd(foo,na.rm = T) / sqrt(length(foo))
 }
 
 d1 = rnorm(30,0,3)
@@ -225,7 +225,7 @@ eating["cookie monster", "lunch"] #we can index using the variable's name
 Indexing into a vector allows you not just to use the value in that position, but to change it too:
 
 ```{r index_update}
-v[1:2] = c(4, 5)
+v[1:2] = c(0, 0)
 v
 v["buz"] = 6
 v
@@ -235,7 +235,7 @@ breakfast["oscar"]= 1
 breakfast #notice that the change did not automatically carry over to "eating" dataset
 
 ## kermit had sandwich and an egg for lunch ##
-eating["kermit", "lunch"]= 2
+eating["kermit","breakfast"]= 2
 eating
 ## ernie had the same breakfast as bert ##
 eating["ernie", "breakfast"] = eating["bert", "breakfast"]
@@ -253,7 +253,7 @@ These are listed in increasing order of generality, since logical data can be co
 ```{r vector_dtypes}
 v = c(TRUE, 1, "1")
 v
-# v[3] + 2 #error!
+# v[2] + 2 #error!
 ```
 
 There are some functions to convert vectors between types:
@@ -285,7 +285,7 @@ v + w
 Possibly the most useful data structure, and the one you'll encounter most often when doing statistics with R, is the `data.frame`. Technically, a dataframe is a list of vectors, although you don't need to interact directly with lists to use them. You can make a dataframe with the eponymous function, `data.frame` which creates a two-dimensional object (like a matrix) with each component vector placed in the columns. In this sense, it's similar to a basic spreadsheet in Excel or SPSS, which you may have experience with.
 
 ```{r dataframe_intro}
-df = data.frame(foo=1:6, bar=rep(c("a", "b"), 3))
+df = data.frame(foo=1:6, bar=rep(c("a", "b", "c"), 2))
 df
 ```
 
@@ -297,7 +297,7 @@ df$foo
 also add more fields to it:
 
 ```{r expand_dataframe}
-df$buz = exp(df$foo)
+df$exp_foo = exp(df$foo)
 df
 ```
 
@@ -349,9 +349,11 @@ We might want to treat some variables as qualitative, nominal **factors** rather
 The variable `time` codes the year as an integer (1, 2, 3). We instead want to treat each year as a factor, so we'll use the `mutate()` function to create a new factor, `year`. The `levels` keyword argument specifies the values that `time` can take (1, 2, 3), and the `labels` argument assigns a label for each level. For example, the first element in `labels`, assigns the label "1990-91" label to time 1.
 
 ```{r Mutate}
+# Another way of doing this without dplyr
 death_year = df_death %>%
   mutate(year = factor(time, levels = 1:3, labels = c('1990-91', '1992-93', '1994-95')))
 
+head(death_year)
 summary(death_year)
 ```
 
@@ -399,6 +401,7 @@ ggplot creates a plot "object", which we will store in `death_plot`. Each plot o
 
 ```{r Create plot object}
 death_plot = ggplot(data = death_summary, aes(x = year, y = n_deaths, group = cause, color = cause))
+death_plot
 ```
 
 This line of code is pretty complicated, so let's break it down! 
@@ -504,10 +507,11 @@ The mean of d1 is `r round(mean(d1),2)` and the mean of d2 is `r round(mean(d2),
 ### T-tests
 ```{r t-tests}
 # Are d1 and d2 significantly different?
-t.test(d1, d2)
+t.test(d1, d2, var.equal = T)
 
+?t.test
 # Is d1 significantly different from 10?
-t.test(d1,mu = 10)
+t.test(d1)
 ```
 
 ### Paired t-tests
@@ -539,10 +543,10 @@ For these cases, you would want to use linear modeling. Before talking about the
 # Generate fake regression data
 fake_regress = NULL;
 fake_regress$x = rnorm(30,68,10)                  
-fake_regress$y = fake_regress$x * 5.49 - 222 + rnorm(30,50,50)
+fake_regress$y = fake_regress$x * 0.2 - 222 + rnorm(30,50,50)
 fake_regress = as.data.frame(fake_regress)
 
-qplot(fake_regress$x,fake_regress$y)
+qplot(fake_regress$x,fake_regress$y) + geom_smooth(method='lm')
 ```
 
 How do you find the values of m and c?    
@@ -580,7 +584,7 @@ Thought question: Take a moment to interpret the coefficients of the model. What
 
 Now, let's test if there is an interaction between adminstration method and dosage. Before we run this, what is an interaction?  
 ```{r}
-res2 = lm(len ~ dose * supp, d4); 
+res2 = lm(len ~  dose * supp, d4); 
 summary(res2)
 ```
 
