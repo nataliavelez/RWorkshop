@@ -1,0 +1,385 @@
+---
+title: "R Workshop"
+author: "Natalia Vélez"
+date: "7/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this tutorial, we'll be analyzing data from a paper we've read recently, and we'll attempt to reproduce the main result. The *goal* of this tutorial is for you to use a real-world dataset to run through a typical workflow: we'll load data, clean the data, visualize the data, and run statistical tests on the results. 
+
+First, we'll load the libraries we'll use today:
+
+```{r}
+install.packages('broom.mixed')
+
+library(tidyverse)
+library(broom.mixed)
+library(ggthemes)
+library(lme4)
+library(lmerTest)
+library(datasets)
+```
+
+## If you learn nothing else today, learn this: Search!
+
+We'll keep reminding you of this throughout today's workshop: search quickly, search often, and search in plain English (or your preferred non-computer language)! 
+
+### Use the internet!
+
+Don't know what function you should use to do a t-test? Google "t test R", or "how do I do a t-test in R?". Don't remember how to use the chisq.test() function? Google "chisq.test() R". Don't remember what a chi-squared test is? Google it, and read the Wikipedia page, and the Stackexchange discussion, and whatever weird PDFs you find online. Still getting an error message when you try to run the code? Google that error message, in quotes.
+
+Every person using R, and every person doing statistics, has a million questions as they are doing it - novices and experts alike. Luckily for all of us, many of our fellow R and stats learners post their questions online, and other lovely people attempt to answer them publicly! We read somewhere that a prominent distinction between an experienced programmer and a novice is the longer latency for the novice to look up the help for something confusing (but the direction of causality is not clear!).
+
+### Use R!
+Another wonderful thing about working in R is that there's actually a lot of help built right into R, and RStudio makes it very easy to see. Almost all R functions (more later on what those are) have help files built in that will provide you with useful information about what those functions do and how to use them. You find this by typing '?function', where I am using "function" as a stand-in for the name you actually want to know about (e.g., '?chisq.test' or '?t.test'). It's important to read these files closely the first time you encounter a function, but it's also (possibly more) important to refer to them **frequently**. If you have a sense for what you want to do, but don't know or can't remember the exact function that will do it, you can use two question marks to search through the help files for a term (e.g. '??regression').
+
+### Debugging practice
+
+Here are several chunks of code that are broken. Fix them! What tools are available to help you use to do this? We've included a note under each chunk about what we were **trying** to do :).
+
+For these exercises, we'll use the [iris dataset](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/iris.html). This dataset gives measurements (in cm) of the sepal length, sepal width, and petal width for 50 flowers from each of 3 species of iris. Let's take a look at the data first:
+
+```{r}
+head(iris)
+```
+
+```{r}
+str(iris)
+```
+
+```{r}
+summary(iris)
+```
+
+**Exercise 1:** Get the last element of x
+```{r}
+x = 25:90
+length(x)
+```
+
+**Exercise 2:** In the chunk below, I made a new dataframe, `avg_iris` that summarizes the average petal length for each species of iris. (Hint: you can enter `avg_iris` on the console to see what it looks like!) I want to use this dataframe to plot the average petal length for each species of iris—but it didn't work! Google the error and fix this code.
+
+```{r eval=FALSE}
+avg_iris = iris %>%
+  group_by(Species) %>%
+  summarise(avg_petal_length = mean(Petal.Length))
+
+ggplot(avg_iris, aes(x = Species, y = avg_petal_length)) +
+  geom_bar()
+```
+
+**Exercise 3:** Here's a more general problem you will run into, simply, how to do something you've never done before! Below, we've plotted a scatter plot showing the relationship between petal length and petal width. Search Google to figure out how to add a regression line to this plot.
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
+  geom_point()
+```
+
+## Data wrangling
+
+First, let's load the data:
+```{r}
+data_wide = read.csv('liu_deidentified_data.csv')
+head(data_wide)
+```
+
+### Summarizing data
+We'll use the `group_by` and `summarise` functions to get a quick glance at our data. The `group_by` function splits your dataframe into groups based on values of a factor. `summarise` reduces values within each group down to a single value. You can use the two together to count values within your data frame, to compute averages, etc.
+
+1) How many babies participated *in each experiment*?
+(Note: The `n()` function is special; it returns the number of rows within each group. Since this dataset is in *wide* format, each child's data takes up one row; therefore, counting the number of rows gives us the number of children in each group.)
+```{r}
+data_wide %>%
+  group_by(experiment) %>%
+  summarise(n = n())
+```
+
+2) What are the minimum, maximum, and average ages of the babies who participated *across all experiments*?
+(Note: You can pass multiple functions through the `summarise` function to summarize different aspects of your data.)
+```{r}
+data_wide %>%
+  summarise(min_age = min(agem),
+            max_age = max(agem),
+            mean_age = mean(agem))
+```
+
+3) How many male and female babies participated *across all experiments*?
+```{r}
+data_wide %>%
+  group_by(sex) %>%
+  summarise(n = n())
+```
+
+4) *Challenge:* How many male and female babies participated in each experiment? (Hint: Take a look at the  code chunks above and combine them!)
+```{r}
+
+```
+
+### Cleaning up data
+This is often the hardest part of analyzing your data! In order to answer questions about your data, you'll first have to get your data into the right format. The data we looked at above is in *wide* format: each child's data occupies one row, and each row contains multiple observations of a single child. We want to put the data in *tidy* format: each observation occupies one row. Most of the tools we'll use within the tidyverse are built to wrangle data into tidy format or to process tidy data (hence the name!).
+
+#### Step 1: Make sure everything's the correct data type (str, mutate, mutate_at)
+
+For our analysis, we'll focus on looking times in the test trials: `test1`, `test2`, `test3`, `test4`. If we look at `data_wide`, we can see that R parsed some of these these as factors:
+```{r}
+str(data_wide)
+```
+
+We want all of these two be processed as numerics, instead. We'll use the `mutate` function to change these variables! We want to first change each of these values to a string ("13.1" --> "13.1") and then change the strings to a numeric ("13.1" --> 13.1). (There's no good reason for this; this has to do with how R handles factors, and is the source of many errors and headaches in data analysis. Ask me to explain it!)
+
+We could mutate each of these columns individually:
+```{r}
+# Helper function
+fctr_to_numeric = function(x_fctr) {
+  x_num = as.numeric(as.character(x_fctr))
+  return(x_num)
+}
+
+data_tidy = data_wide %>%
+  mutate(test1 = fctr_to_numeric(test1),
+         test2 = fctr_to_numeric(test2),
+         test3 = fctr_to_numeric(test3),
+         test4 = fctr_to_numeric(test4))
+```
+
+```{r}
+str(data_tidy)
+```
+
+Or, if you want to be fancy: we could select all the variables that start with the string "test" (`vars(starts_with('test'))`) and change them all at once using `mutate_at`:
+```{r}
+data_tidy = data_wide %>%
+  mutate_at(vars(starts_with('test')), fctr_to_numeric)
+```
+
+Now, let's do some *quality checks!* First, let's make sure that these columns are now numeric:
+```{r}
+str(data_tidy)
+```
+
+Now, let's make sure that we didn't accidentally change anything when we converted these columns, by comparing the first few rows of our original dataframe (`data_wide`) to our new dataframe (`data_tidy`):
+```{r}
+data_wide %>% select(starts_with("test")) %>% head()
+```
+
+```{r}
+data_tidy %>% select(starts_with("test")) %>% head()
+```
+
+#### Step 2: Select the columns you want to analyze (select, select_helpers)
+`data_wide` contains many, many columns, which describe:
+
+* Participant information (`sex`, `subj`, `agem`)
+* Counterbalancing information (`experiment`, `cost`, `hv_side`, `first_fam`, `first_test`)
+* Looking time in familiarization trials (`fam*`)
+* Looking time in test trials (`test*`)
+* Summary statistics of looking times (`avg_fam`-`pref.raw`)
+
+For our analysis, we just want to keep columns relating to participant information, counterbaslancing, and test trials. We're going to use the `select` function to keep just these columns!
+
+`select` has lots of helper functions that make it easier to pick out the columsn you want. You can learn more about these by looking at the documentation:
+```{r}
+?select_helpers
+```
+
+You can also use slice notation ([start_col]:[end_col]) to select a range of contiguous columns. We're going to use a combination of slicing and a helper function (`starts_with`) to select the columns we want:
+
+```{r}
+data_tidy = data_tidy %>%
+  select(sex:first_test, starts_with('test'))
+
+str(data_tidy)
+```
+
+#### Step 3: Tidy the data (gather, arrange)
+
+The `gather` function "gathers" multiple columns in a wide data frame and converts them to key-value pairs in a tidy dataframe. Let's try this with a simple dataframe to test it out:
+
+```{r}
+foo = data_frame(subject = 'demo', trial1 = 1, trial2 = 2, trial3 = 3, trial4 = 4)
+foo
+```
+
+```{r}
+bar = foo %>% gather(trial, response, trial1:trial4)
+bar
+```
+
+Let's do the same to our actual data! We're also going to use the `arrange` function to sort the dataframe by experiment, subject, and trial, which will make it easier to manually inspect:
+```{r}
+data_tidy = data_tidy %>%
+  gather(trial, look, test1:test4) %>%
+  arrange(experiment, subj, trial)
+
+head(data_tidy)
+```
+
+#### Step 4: Label each trial type (mutate, ifelse)
+
+(Note: This step is pretty idiosyncratic to this particular dataset. When you design your own spreadsheets, you should organize them so that they're easier to analyze! :) In general, the more datasets you analyze with R, the better able you'll be at organizing your data so that they're easier to clean up to begin with.)
+
+We have almost everything we need to analyze the data! Now we just need to label each trial as either as "high value" or "low value" trial. The dataset has one column that will help us do this: `first_test`. Here, we have to read the paper to learn how the trials were counterbalanced. From the paper, we know the following:
+
+* There are two types of test trials, where the agent approaches the high-value [HV] or low-value [LV] target
+* Each child saw four test trials total
+* Test trials were presented in an alternating order
+* The experimenters counterbalanced which trial was shown first
+
+If we put all these together, we now know that, if the first test trial is "LV", then the trial order is "LV-HV-LV-HV" and that, if the first test trial is "HV", then the trial order is "HV-LV-HV-LV".
+
+Let's use what we know to label the trials:
+
+```{r}
+data_tidy = data_tidy %>%
+  group_by(subj) %>%
+  mutate(trial_no = str_extract(trial, '(?<=test)[1-4]'),
+         trial_no = as.numeric(trial_no),
+         trial_type = ifelse(first_test == 'HV',
+                             c('HV', 'LV', 'HV', 'LV'),
+                             c('LV', 'HV', 'LV', 'HV')),
+         trial_type = factor(trial_type,
+                             levels = c('LV', 'HV'),
+                             labels = c('Lower Value', 'Higher Value'))) %>%
+  select(-starts_with("first"))
+
+data_tidy
+```
+
+## Visualizing data (ggplot)
+
+Phew, we made it! Now we have everything we need to reproduce the main figure in the plot. Hooray, science!
+
+### Introduction to ggplot
+
+First, let's learn the basics of ggplot. We'll build a plot by taking a sequence of commands and combining them using +. Each command controls one aspect of the appearance of our plot.
+ 
+The basic building block of our plot is the `ggplot` command. Here, we'll specify two important things about our plot:
+
+* `data`: What dataset we're using
+* `aes`: Aesthetic mappings (i.e., which columns in the dataframe map onto which aspects of the plot; the most basic of these is setting variables for our x- and y-axes)
+
+Let's try it! We're going to plot a histogram of babies' ages in our sample. To plot a histogram, we only have to specify a single aesthetic: which variable goes in our x axis.
+
+```{r}
+ggplot(data_wide, aes(x = agem))
+```
+
+But wait—there's nothing on this plot yet! You can add graphics to this plot using *geoms*. There are many kinds of geoms. Some of the most common are: `geom_bar` (bars), `geom_point` (points), `geom_line` (lines), `geom_smooth` (regression fits), `geom_errorbar` (errorbars), and `geom_boxplot` (boxplots). Here, we're going to use `geom_histogram`.
+
+```{r}
+ggplot(data_wide, aes(x = agem)) +
+  geom_histogram()
+```
+Ta-da! ggplot automatically split participants into bins and plotted the number of participants in each bin.
+
+You can layer geoms on top of one another to build more complex plots. You can even build plots that use multiple dataframes: Here, I'm going to make a new dataframe, `mean_age`, that contains the average age across all experiments:
+```{r}
+mean_age = data_wide %>%
+  summarise(mean_age = mean(agem))
+
+mean_age
+```
+
+And I'm going to use this dataframe to draw a vertical line (`geom_vline`) that marks the average age:
+```{r}
+ggplot(data_wide, aes(x = agem)) +
+  geom_histogram() +
+  geom_vline(data=mean_age, aes(xintercept = mean_age))
+```
+
+Finally, I can use all kinds of options to customize the look of my plot:
+```{r}
+ggplot(data_wide, aes(x = agem)) +
+  geom_histogram() +
+  geom_vline(data=mean_age, aes(xintercept = mean_age), linetype='dashed') +
+  theme_few(base_size = 12) +
+  xlab('Age (Months)') +
+  ylab('# Children')
+```
+
+### Reproducing the main figure
+
+Let's put this all together to plot the main figure in the paper. Remember, the end result looks like this:
+
+![**Fig. 3. Boxplots of average looking time toward the higher- and lower-value choice during test in experiments 1 through 3.** White diamonds indicate means, with error bars indicating within-subjects standard errors. Horizontal lines indicate medians, boxes indicate middle quartiles, and whiskers indicate points within 1.5 times the interquartile range from the upper and lower edges of the middle quartiles. Light gray points connected across boxes indicate looking times from individual participants. Beta coefficients indicate effect sizes in standard deviations, and asterisks indicate significance relative to prespecified (experiments 1 and 2) and preregistered (experiment 3) alphas (*P < 0.05). Statistical analyses are provided in the text and supplementary materials.](images/liu_fig3.png)
+
+This gives us a pretty good sense of what we need to plot! Based on the figure caption, we know that we need to prepare three things to make our plot. 
+
+First, we need to average across the trial types for each subject. (Remember, each baby completed two test trials/ type; by averaging across these two trials, we'll ensure that each baby contributes a single datapoint to each box.)
+
+```{r}
+avg_subject_lt = data_tidy %>%
+  group_by(experiment, subj, trial_type) %>%
+  summarise(avg_look = mean(look, na.rm=T)) %>%
+  mutate(log_look = log(avg_look))
+```
+
+Next, we'll need to compute the mean looking time *across subjects*, as well as the standard error of the mean. These are the statistics denoted by the diamonds and error bars:
+
+```{r}
+avg_group_lt = avg_subject_lt %>%
+  group_by(experiment, trial_type) %>%
+  summarise(group_avg_look = mean(avg_look),
+            se_look = sd(avg_look)/sqrt(n())) %>%
+  mutate(se_lo = group_avg_look - se_look,
+         se_hi = group_avg_look + se_look)
+```
+
+Finally, we'll need to compute the regression coefficients. The key sentence we need to look at in the results is this:
+
+> Across all experiments, infants looked longer at the lower-value action (mean = 26.99 s, SD = 14.13) than the higher-value action (mean = 21.64 s, SD = 13.94) [95% CI (0.139, 0.415), B = 0.277, SE = 0.070, b = 0.424, t(80) = 3.975, P < 0.001, one-tailed, mixed effects model with random intercepts for participant and experiment], supporting our general hypothesis that infants infer the values of agents’ goals from the costs of their actions.
+
+This is the key sentence in the paper! This is the evidence supporting the author's claim. Since we have the data, we should be able to reproduce every single statistic within this sentence. First, let's try reproducing this:
+
+> Across all experiments, infants looked longer at the lower-value action (mean = 26.99 s, SD = 14.13) than the higher-value action (mean = 21.64 s, SD = 13.94)
+
+```{r}
+avg_subject_lt %>%
+  group_by(trial_type) %>%
+  summarise(mean_lt = mean(avg_look),
+            sd_lt = sd(avg_look)) %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+> b = 0.424, t(80) = 3.975, P < 0.001, one-tailed, mixed effects model with random intercepts for participant and experiment
+
+```{r}
+avg_subject_lt_model = avg_subject_lt %>%
+  mutate(trial_type = factor(trial_type, levels = c('Higher Value', 'Lower Value')))
+
+all_exp = lmer(scale(log_look) ~ trial_type + (1|subj) + (1|experiment), data=avg_subject_lt_model, REML=FALSE)
+summary(all_exp)
+confint(all_exp)
+```
+
+Now let's do this separately for each experiment to get the regression coefficients we're including in the plot:
+```{r}
+plot_coefficients = avg_subject_lt_model %>%
+  group_by(experiment) %>%
+  do(tidy(lmer(scale(log_look) ~ trial_type + (1|subj), data=., REML=FALSE))) %>%
+  filter(term == 'trial_typeLower Value') %>%
+  mutate(sig = ifelse(p.value < 0.05, '*', ''),
+         label = sprintf('%sβ=%0.3f', sig, estimate))
+
+plot_coefficients
+```
+
+And, finally, the plot!
+```{r}
+ggplot(avg_subject_lt, aes(x = trial_type, y = avg_look, fill = trial_type)) +
+  geom_boxplot(width = 0.5, outlier.colour = NA, alpha = 0.75) +
+  geom_point(alpha = 0.1) +
+  geom_line(aes(group = subj), alpha = 0.1) +
+  geom_errorbar(data=avg_group_lt, aes(ymin = se_lo, ymax = se_hi, y=NULL), width=0) +
+  geom_point(data=avg_group_lt, aes(y = group_avg_look), fill='white', shape=23, size=3) +
+  geom_text(data=plot_coefficients, aes(x = 1.5, y = 70, label=label, fill=NULL))+
+  facet_grid(. ~ experiment) +
+  theme_few(base_size = 12) +
+  scale_fill_brewer(palette = 'Paired') +
+  guides(fill = F) +
+  xlab('Test Trial') +
+  ylab('Looking Time (s)')
+```
