@@ -2,7 +2,9 @@
 title: "R Workshop"
 author: "Natalia Vélez"
 date: "7/9/2019"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -219,7 +221,7 @@ head(data_tidy)
 
 #### Step 4: Label each trial type (mutate, ifelse)
 
-(Note: This step is pretty idiosyncratic to this particular dataset. When you design your own spreadsheets, you should organize them so that they're easier to analyze! :) In general, the more datasets you analyze with R, the better able you'll be at organizing your data so that they're easier to clean up to begin with.)
+(Note: This step is pretty idiosyncratic to this particular dataset! This is one of the most challenging parts with working with other people's data: Everyone organizes their data in their own way. Thankfully, this particular dataset is very organized and well documented, so we can use what we know from the paper and codebook to tidy the data.)
 
 We have almost everything we need to analyze the data! Now we just need to label each trial as either as "high value" or "low value" trial. The dataset has one column that will help us do this: `first_test`. Here, we have to read the paper to learn how the trials were counterbalanced. From the paper, we know the following:
 
