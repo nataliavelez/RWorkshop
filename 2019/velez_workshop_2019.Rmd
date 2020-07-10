@@ -3,8 +3,8 @@ title: "R Workshop"
 author: "Natalia Vélez"
 date: "7/9/2019"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,8 +16,6 @@ In this tutorial, we'll be analyzing data from a paper we've read recently, and 
 First, we'll load the libraries we'll use today:
 
 ```{r}
-install.packages('broom.mixed')
-
 library(tidyverse)
 library(broom.mixed)
 library(ggthemes)
@@ -60,7 +58,7 @@ summary(iris)
 **Exercise 1:** Get the last element of x
 ```{r}
 x = 25:90
-length(x)
+tail(x, 1)
 ```
 
 **Exercise 2:** In the chunk below, I made a new dataframe, `avg_iris` that summarizes the average petal length for each species of iris. (Hint: you can enter `avg_iris` on the console to see what it looks like!) I want to use this dataframe to plot the average petal length for each species of iris—but it didn't work! Google the error and fix this code.
@@ -71,13 +69,21 @@ avg_iris = iris %>%
   summarise(avg_petal_length = mean(Petal.Length))
 
 ggplot(avg_iris, aes(x = Species, y = avg_petal_length)) +
-  geom_bar()
+  geom_bar(stat='identity')
+```
+
+Slightly fancier version:
+```{r}
+ggplot(iris, aes(x = Species, y = Petal.Length)) +
+  stat_summary(fun.y = 'mean', geom = 'bar') +
+  stat_summary(fun.data = 'mean_cl_boot', geom = 'errorbar', width = 0)
 ```
 
 **Exercise 3:** Here's a more general problem you will run into, simply, how to do something you've never done before! Below, we've plotted a scatter plot showing the relationship between petal length and petal width. Search Google to figure out how to add a regression line to this plot.
 ```{r}
 ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
-  geom_point()
+  geom_point() +
+  geom_smooth(method = 'lm')
 ```
 
 ## Data wrangling
@@ -103,9 +109,10 @@ data_wide %>%
 (Note: You can pass multiple functions through the `summarise` function to summarize different aspects of your data.)
 ```{r}
 data_wide %>%
-  summarise(min_age = min(agem),
-            max_age = max(agem),
-            mean_age = mean(agem))
+  group_by(experiment) %>%
+  summarise(n = n(),
+            mean_age = mean(agem),
+            sd_age = sd(agem))
 ```
 
 3) How many male and female babies participated *across all experiments*?
@@ -117,7 +124,11 @@ data_wide %>%
 
 4) *Challenge:* How many male and female babies participated in each experiment? (Hint: Take a look at the  code chunks above and combine them!)
 ```{r}
-
+# I'm a comment! 
+data_wide %>% 
+  group_by(experiment, sex) %>% 
+  summarise(n = n()) %>%
+  spread(sex, n)
 ```
 
 ### Cleaning up data
@@ -210,6 +221,10 @@ bar = foo %>% gather(trial, response, trial1:trial4)
 bar
 ```
 
+```{r}
+bar %>% spread(trial, response)
+```
+
 Let's do the same to our actual data! We're also going to use the `arrange` function to sort the dataframe by experiment, subject, and trial, which will make it easier to manually inspect:
 ```{r}
 data_tidy = data_tidy %>%
@@ -273,7 +288,7 @@ But wait—there's nothing on this plot yet! You can add graphics to this plot u
 
 ```{r}
 ggplot(data_wide, aes(x = agem)) +
-  geom_histogram()
+  geom_histogram(bins = 5)
 ```
 Ta-da! ggplot automatically split participants into bins and plotted the number of participants in each bin.
 
@@ -373,15 +388,16 @@ And, finally, the plot!
 ```{r}
 ggplot(avg_subject_lt, aes(x = trial_type, y = avg_look, fill = trial_type)) +
   geom_boxplot(width = 0.5, outlier.colour = NA, alpha = 0.75) +
-  geom_point(alpha = 0.1) +
-  geom_line(aes(group = subj), alpha = 0.1) +
+  geom_point(alpha = 0.1) + 
+  geom_line(aes(group = subj), alpha = 0.1) + 
   geom_errorbar(data=avg_group_lt, aes(ymin = se_lo, ymax = se_hi, y=NULL), width=0) +
   geom_point(data=avg_group_lt, aes(y = group_avg_look), fill='white', shape=23, size=3) +
-  geom_text(data=plot_coefficients, aes(x = 1.5, y = 70, label=label, fill=NULL))+
+  geom_text(data=plot_coefficients, aes(x = 1.5, y = 70, label=label, fill=NULL)) +
   facet_grid(. ~ experiment) +
   theme_few(base_size = 12) +
   scale_fill_brewer(palette = 'Paired') +
   guides(fill = F) +
   xlab('Test Trial') +
-  ylab('Looking Time (s)')
+  ylab('Looking Time (s)') 
+
 ```
